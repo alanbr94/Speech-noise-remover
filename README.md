@@ -1,10 +1,13 @@
 # Speech-noise-remover
 
 This is a noise removal program to remove noise background in speech files. 
+
+- Special Thanks
+ https://github.com/tsurumeso - Worked hard in the AI code. Thanks for sharing such a great work with us!
+ https://github.com/Anjok07 - Worked hard in amazing models for runnind the tsurumeso AI code, thanks for the contribuition!
+
+
 It's the alpha version, follow the following steps to remove your noise background.
-
-
-
 
 
 TUTORIAL
