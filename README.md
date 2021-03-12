@@ -1,13 +1,15 @@
 # Speech-noise-remover
 
-Este é um programa para remover o ruído de fundo em arquivos de fala.
+Este é um programa para remover o ruído de fundo em arquivos áudio.
 
 - Agradecimentos especiais
   - https://github.com/tsurumeso - Trabalhou e desenvolveu o código de IA. Obrigado por compartilhar um ótimo trabalho conosco!
-  - https://github.com/Anjok07 - Trabalhou no desenvolvimento de modelos incríveis para executar o código de tsurumeso, obrigado pela contribuição!
+  - https://github.com/Anjok07 - Trabalhou no desenvolvimento de modelos incríveis para executar o código do tsurumeso, obrigado pela contribuição!
 
 
 Essa é uma versão alfa, siga os seguintes passos para remover o ruído de fundo do seu arquivo de áudio.
+
+Programa => https://drive.google.com/file/d/1a8KS3uNqLqL1R2pNa9VnAJsUAb_7RURC/view?usp=sharing
 
 
 TUTORIAL
