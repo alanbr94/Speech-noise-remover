@@ -1,28 +1,28 @@
 # Speech-noise-remover
 
-This is a noise removal program to remove noise background in speech files. 
+Este é um programa para remover o ruído de fundo em arquivos de fala.
 
-- Special Thanks
-  - https://github.com/tsurumeso - Worked hard in the AI code. Thanks for sharing such a great work with us!
-  - https://github.com/Anjok07 - Worked hard in amazing models for runnind the tsurumeso AI code, thanks for the contribuition!
+- Agradecimentos especiais
+  - https://github.com/tsurumeso - Trabalhou e desenvolveu o código de IA. Obrigado por compartilhar um ótimo trabalho conosco!
+  - https://github.com/Anjok07 - Trabalhou no desenvolvimento de modelos incríveis para executar o código de tsurumeso, obrigado pela contribuição!
 
 
-It's the alpha version, follow the following steps to remove your noise background.
+Essa é uma versão alfa, siga os seguintes passos para remover o ruído de fundo do seu arquivo de áudio.
 
 
 TUTORIAL
-Unzip the dist.zip.
-Put your desirable audio in the dist folder. (Your Audio may be in .wav or .mp3 format)
-Execute the inference2.exe
+- Descompacte o dist.zip
+- Coloque o áudio desejado na pasta "dist" (Seu áudio pode estar no formato .wav ou .mp3)
+- Execute o inference2.exe
 
 
-Note:
-- You need to have only one audio in the dist folder before running the program.
-- After running the program, you will have an audio with the VOICE and another one with the NOISE. (in case your audio is in .mp3, you will have also an audio converted to .wav)
-- Your audio doesn't need to have a specific name
-- After finishing the process, move your audio for another place, in order to run the program again.
-- It runs only one file a time
+Observações:
+- Você precisa ter apenas um áudio na pasta dist antes de executar o programa.
+- Após executar o programa, você terá um arquivo de áudio com a VOZ e outro com o RUÍDO. (caso seu áudio esteja em .mp3, você também terá um áudio convertido para .wav)
+- Seu áudio não precisa ter um nome específico
+- Após finalizar o processo, mova seu áudio para outro local, a fim de executar o programa novamente.
+- O programa trabalha com um arquivo de áudio por vez.
 
 
 
-A better new version will be released in the next few days.
+Uma versao melhor, com interface e mais sofisticada será lançada nos próximos dias.
