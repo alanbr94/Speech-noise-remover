@@ -31,4 +31,4 @@ Observações:
 
 
 
-Uma versao melhor, com interface e mais sofisticada será lançada nos próximos dias.
+Uma versão melhor e mais sofisticada será lançada nos próximos dias.
