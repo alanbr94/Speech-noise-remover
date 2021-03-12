@@ -9,14 +9,17 @@ Este é um programa para remover o ruído de fundo em arquivos áudio.
 
 Essa é uma versão alfa, siga os seguintes passos para remover o ruído de fundo do seu arquivo de áudio.
 
+
 DOWNLOAD
-- Para baixar o programa, vá para a aba de "Releases" e baixo o arquivo "dist.zip"
+- Para baixar o programa, vá para a aba "Releases" e baixe o arquivo "dist.zip"
+
 
 
 TUTORIAL
 - Descompacte o dist.zip
-- Coloque o áudio desejado na pasta "dist" (Seu áudio pode estar no formato .wav ou .mp3)
+- Coloque o áudio desejado na pasta "dist" (Seu áudio pode estar nos formatos .wav ou .mp3)
 - Execute o inference2.exe
+
 
 
 Observações:
