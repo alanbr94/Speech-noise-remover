@@ -11,7 +11,7 @@ Essa é uma versão alfa, siga os seguintes passos para remover o ruído de fund
 
 
 DOWNLOAD
-- Para baixar o programa, vá para a aba "Releases" e baixe o arquivo "dist.zip"
+- Para baixar o programa, vá para a aba "Releases" - "Alpha_version" e baixe o arquivo "dist.zip"
 
 
 
