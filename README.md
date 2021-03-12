@@ -9,7 +9,8 @@ Este é um programa para remover o ruído de fundo em arquivos áudio.
 
 Essa é uma versão alfa, siga os seguintes passos para remover o ruído de fundo do seu arquivo de áudio.
 
-Programa => https://drive.google.com/file/d/1a8KS3uNqLqL1R2pNa9VnAJsUAb_7RURC/view?usp=sharing
+DOWNLOAD
+- Para baixar o programa, vá para a aba de "Releases" e baixo o arquivo "dist.zip"
 
 
 TUTORIAL
