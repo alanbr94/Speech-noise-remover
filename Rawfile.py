@@ -17,273 +17,272 @@ from lib import nets
 from lib import spec_utils
 import itertools
 import threading
-lst = []
-sound = ''
-lista1 = []
+import queue
 
-root = Tk()
-root.title('Filtro de Ruído')
-p1 = PhotoImage(file = 'models/imagens/sound-waves.png')
- 
-# Selecionando o Ícone do Tk
-root.iconphoto(False, p1)
-root.geometry("500x500")
+class NoiseRemoverApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title('Filtro de Ruído')
+        self.root.geometry("500x500")
 
-bg = PhotoImage(file = "models/imagens/wp2831915-black-background-png.png") #Escolhendo o imagem de background do Tk
-my_label = Label(root, image = bg)
-my_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.file_paths = []
+        self.output_directory = ''
+        self.queue = queue.Queue()
 
-progress=ttk.Progressbar(root,orient=HORIZONTAL,length=100,mode='indeterminate')
-text_box = Text(root, height=8, width=35, padx=15, pady=15, yscrollcommand = True)
-text_box.config(state='normal')
-text_box = Text(root, height=8, width=35, padx=15, pady=15, yscrollcommand = True)
-text_box.tag_configure("center", justify="center")
-text_box.tag_add("center", 1.0, "end")
-text_box.place(x=100, y=250)
-text_box.insert(1.0, 'Aguardando seleção de arquivos...')
-text_box.config(state='disabled')
+        self.setup_gui()
+        self.process_queue()
 
-def quit_me(): #Saí do programa de maneira abrupta
-    print('\nSaindo...')
-    root.destroy()
-    
-    
-def open_file(): #Abre o arquivo
-    global lista1, lst
-    nomes=[]
-    answer = True
-    text_box.config(state='normal')
-    text_box.delete(1.0,"end")
-    text_box.insert(1.0, "Arquivos selecionados:" + "\n")
-    if answer == True: #Adiciona a primeira vez
-        song = filedialog.askopenfilenames(title="Filtro de ruídos",
-                                            filetypes= (("Audio Files",".wav .ogg .mp3 .mpeg .wma .flac .aiff .aac .alac .pcm"),
-                                            ("all files","*.*")))
+    def setup_gui(self):
+        # Setup background and icons
+        script_dir = os.path.dirname(__file__)
+        self.p1 = PhotoImage(file = os.path.join(script_dir, 'models', 'imagens', 'sound-waves.png'))
+        self.root.iconphoto(False, self.p1)
+        self.bg = PhotoImage(file = os.path.join(script_dir, "models", "imagens", "wp2831915-black-background-png.png"))
+        my_label = Label(self.root, image=self.bg)
+        my_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Setup widgets
+        self.progress = ttk.Progressbar(self.root, orient=HORIZONTAL, length=100, mode='indeterminate')
+        self.text_box = Text(self.root, height=8, width=35, padx=15, pady=15, yscrollcommand=True)
+        self.text_box.tag_configure("center", justify="center")
+        self.text_box.tag_add("center", 1.0, "end")
+        self.text_box.place(x=100, y=250)
+        self.text_box.insert(1.0, 'Aguardando seleção de arquivos...')
+        self.text_box.config(state='disabled')
+
+        # Setup buttons
+        self.browse_btn = Button(self.root, text="Carregar Áudio", command=self.open_file, font="Raleway", bg="gray", fg="white", height=1, width=14)
+        self.browse_btn.place(x=180, y=10)
+        self.save_button = Button(self.root, text="Local de salvamento", command=self.select_output_directory, font="Raleway", bg="gray", fg="white", height=1, width=17)
+        self.save_button.place(x=170, y=50)
+        self.filter_button = Button(self.root, text="Filtrar ruído", command=lambda: threading.Thread(target=self.process_files, daemon=True).start(), font="Raleway", bg="gray", fg="white", height=1, width=17)
+        self.filter_button.place(x=170, y=90)
+        self.quit_button = Button(self.root, text="Sair", command=self.quit_app, font="Raleway", bg="gray", fg="white", height=1, width=17)
+        self.quit_button.place(x=335, y=465)
+        self.clear_button = Button(self.root, text="Limpar dados", command=self.clear_selection, font="Raleway", bg="gray", fg="white", height=1, width=14)
+        self.clear_button.place(x=3, y=465)
+        self.progress.place(x = 203, y = 411)
         
-    answer = messagebox.askyesno("","Continuar adicionando?")
-    
-    lst.append(song) 
-    while answer == True: #Continua adicionando
-        song = filedialog.askopenfilenames(title="Filtro de ruídos",
-                                          filetypes= (("Audio Files",".wav .ogg .mp3 .mpeg .wma .flac .aiff .aac .alac .pcm"),
-                                          ("all files","*.*")))
-        
-        answer = messagebox.askyesno("","Continuar adicionando?")
-        lst.append(song)
-        
-    text_box.delete(3.0,"end")                                        
-    lista1 = list(itertools.chain(*lst)) #Transforma dicionário em lista
-    nomes.clear()
-    
-    for i in lista1:#Escreve na tela quais arquivos serão filtrados
-        new_img = i[:-4]
-        img2 = os.path.basename(new_img)
-        nomes.append(img2)
-        text_box.insert(3.0,"- "+ img2 + "\n")
-    text_box.config(state='disabled')
-    return lista1
-    
-    
-def saveFile():
-    global dirname
-    dirname = filedialog.askdirectory(parent=root,initialdir="/",title='Selecione o diretório')
-    return dirname
+    def open_file(self):
+        song_list = []
+        answer = True
+        while answer:
+            songs = filedialog.askopenfilenames(
+                title="Filtro de ruídos",
+                filetypes=(("Audio Files", ".wav .ogg .mp3 .mpeg .wma .flac .aiff .aac .alac .pcm"),
+                           ("all files", "*.*"))
+            )
+            if songs:
+                song_list.extend(songs)
+            answer = messagebox.askyesno("", "Continuar adicionando?")
 
-    
-def convertFormat(*arg):      #Filtra o ruído
-    global dirname, lista_de_audios
-    lista_de_audios = []
-    
-    try: 
-        for audio_foradeformato in lista1: #Converte qualquer arquivo para o formato .wav mono 16khz 16bit
-            img = os.path.basename(audio_foradeformato)
-            if (img.endswith('wav') or img.endswith('aac') or img.endswith('ogg') or img.endswith('wma')  or img.endswith('mp3')  or img.endswith('alac') or img.endswith('flac') or img.endswith('aiff') or img.endswith('pcm')):   
+        self.file_paths = song_list
+        self.update_textbox()
+
+    def update_textbox(self):
+        self.text_box.config(state='normal')
+        self.text_box.delete(1.0, "end")
+        self.text_box.insert(1.0, "Arquivos selecionados:\n")
+        for file_path in self.file_paths:
+            base_name = os.path.basename(file_path)
+            self.text_box.insert(3.0, f"- {base_name}\n")
+        self.text_box.config(state='disabled')
+
+    def select_output_directory(self):
+        self.output_directory = filedialog.askdirectory(parent=self.root, initialdir="/", title='Selecione o diretório')
+
+    def process_files(self):
+        if not self.file_paths:
+            messagebox.showwarning(title='Aviso', message='Nenhum arquivo de áudio selecionado.')
+            return
+        if not self.output_directory:
+            messagebox.showwarning(title='Aviso', message='Por favor, insira o local de salvamento')
+            return
+
+        converted_files = []
+        for audio_path in self.file_paths:
+            try:
+                base_name, extension = os.path.splitext(os.path.basename(audio_path))
+                if extension.lower() in ['.wav', '.aac', '.ogg', '.wma', '.mp3', '.alac', '.flac', '.aiff', '.pcm']:
+                    sound = AudioSegment.from_file(audio_path)
+                    converted_filename = f"{base_name}_CONVERTIDO.wav"
+                    converted_path = os.path.join(self.output_directory, converted_filename)
+                    sound.export(converted_path, format="wav")
+
+                    dir_path = os.path.join(self.output_directory, base_name)
+                    if not os.path.exists(dir_path):
+                        os.makedirs(dir_path)
+                    shutil.copy(audio_path, dir_path)
+                    converted_files.append(converted_path)
+            except Exception as e:
+                messagebox.showerror(title='Erro', message=f'Erro ao converter {os.path.basename(audio_path)}: {e}')
+
+        self.run_vocal_remover(converted_files)
+
+    def run_vocal_remover(self, audio_files):
+        # The vocal remover logic will be placed here.
+        # For now, it's a placeholder.
+        # This will also be refactored to remove argparse and improve clarity.
+        
+        # Placeholder for the main processing logic
+        def main_processing(audio_list, output_dir):
+            class VocalRemover(object):
+                def __init__(self, model, device, window_size):
+                    self.model = model
+                    self.offset = model.offset
+                    self.device = device
+                    self.window_size = window_size
+
+                def _execute(self, X_mag_pad, roi_size, n_window):
+                    self.model.eval()
+                    with torch.no_grad():
+                        preds = []
+                        for i in tqdm(range(n_window)):
+                            start = i * roi_size
+                            X_mag_window = X_mag_pad[None, :, :, start:start + self.window_size]
+                            X_mag_window = torch.from_numpy(X_mag_window).to(self.device)
+                            pred = self.model.predict(X_mag_window)
+                            pred = pred.detach().cpu().numpy()
+                            preds.append(pred[0])
+
+                        pred = np.concatenate(preds, axis=2)
+
+                    return pred
+
+                def preprocess(self, X_spec):
+                    X_mag = np.abs(X_spec)
+                    X_phase = np.angle(X_spec)
+
+                    return X_mag, X_phase
+
+                def inference(self, X_spec):
+                    X_mag, X_phase = self.preprocess(X_spec)
+
+                    coef = X_mag.max()
+                    X_mag_pre = X_mag / coef
+
+                    n_frame = X_mag_pre.shape[2]
+                    pad_l, pad_r, roi_size = dataset.make_padding(n_frame, self.window_size, self.offset)
+                    n_window = int(np.ceil(n_frame / roi_size))
+
+                    X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
             
-                sound = AudioSegment.from_file(audio_foradeformato)
-                if (img.endswith('alac') or img.endswith('flac') or img.endswith('aiff')):
-                    img_semformato = img[:-5]
+                    pred = self._execute(X_mag_pad, roi_size, n_window)
+                    pred = pred[:, :, :n_frame]
+            
+                    return pred * coef, X_mag, np.exp(1.j * X_phase)
+
+                def inference_tta(self, X_spec):
+                    X_mag, X_phase = self.preprocess(X_spec)
+
+                    coef = X_mag.max()
+                    X_mag_pre = X_mag / coef
+
+                    n_frame = X_mag_pre.shape[2]
+                    pad_l, pad_r, roi_size = dataset.make_padding(n_frame, self.window_size, self.offset)
+                    n_window = int(np.ceil(n_frame / roi_size))
+
+                    X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
+
+                    pred = self._execute(X_mag_pad, roi_size, n_window)
+                    pred = pred[:, :, :n_frame]
+
+                    pad_l += roi_size // 2
+                    pad_r += roi_size // 2
+                    n_window += 1
+
+                    X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
+
+                    pred_tta = self._execute(X_mag_pad, roi_size, n_window)
+                    pred_tta = pred_tta[:, :, roi_size // 2:]
+                    pred_tta = pred_tta[:, :, :n_frame]
+
+                    return (pred + pred_tta) * 0.5 * coef, X_mag, np.exp(1.j * X_phase)
+
+            count = 0
+            for audio in audio_list:
+                count += 1
+                self.progress.start(10)
+
+                script_dir = os.path.dirname(__file__)
+                model_path = os.path.join(script_dir, 'models', 'MGM_HIGHEND_v4_sr44100_hl1024_nf2048.pth')
+
+                sr = 44100
+                n_fft = 2048
+                hop_length = 1024
+                window_size = 512
+                tta = False
+
+                device = torch.device('cpu')
+                model = nets.CascadedASPPNet(n_fft)
+                model.load_state_dict(torch.load(model_path, map_location=device))
+                if torch.cuda.is_available():
+                    device = torch.device('cuda:0')
+                    model.to(device)
+
+                X, sr = librosa.load(audio, sr, False, dtype=np.float32, res_type='kaiser_fast')
+                basename = os.path.splitext(os.path.basename(audio))[0]
+
+                if X.ndim == 1:
+                    X = np.asarray([X, X])
+
+                X = spec_utils.wave_to_spectrogram(X, hop_length, n_fft)
+
+                vr = VocalRemover(model, device, window_size)
+                if tta:
+                    pred, X_mag, X_phase = vr.inference_tta(X)
                 else:
-                    img_semformato = img[:-4]
-                sound.export(img_semformato+"_CONVERTIDO.wav", format="wav")
-                RUIDOSO = img_semformato+"_CONVERTIDO.wav"
-                dir = (dirname + "\\" + img_semformato)
-                if os.path.exists(dir):
-                    messagebox.showwarning(title='Aviso', message= 'Já existe uma pasta com esse nome: ' + img_semformato)
-                else:
-                    os.makedirs(dir)
-                    shutil.copy(audio_foradeformato,dir)
-                    lista_de_audios.append(RUIDOSO)
-    except NameError:
-        messagebox.showwarning(title='Aviso', message= 'Por favor, insira o local de salvamento')
-    except FileNotFoundError:
-        messagebox.showwarning(title='Aviso', message= 'Arquivo não encontrado') 
+                    pred, X_mag, X_phase = vr.inference(X)
 
-    class VocalRemover(object):
-        
-        def __init__(self, model, device, window_size):
-            self.model = model
-            self.offset = model.offset
-            self.device = device
-            self.window_size = window_size
-    
-        def _execute(self, X_mag_pad, roi_size, n_window):
-            self.model.eval()
-            with torch.no_grad():
-                preds = []
-                for i in tqdm(range(n_window)):
-                    start = i * roi_size
-                    X_mag_window = X_mag_pad[None, :, :, start:start + self.window_size]
-                    X_mag_window = torch.from_numpy(X_mag_window).to(self.device)
-                    pred = self.model.predict(X_mag_window)
-                    pred = pred.detach().cpu().numpy()
-                    preds.append(pred[0])
-                    
-                pred = np.concatenate(preds, axis=2)
+                v_spec = np.clip(X_mag - pred, 0, np.inf) * X_phase
+                wave = spec_utils.spectrogram_to_wave(v_spec, hop_length=hop_length)
 
-            return pred
+                base_name_no_ext = os.path.splitext(os.path.basename(audio))[0].replace('_CONVERTIDO', '')
+                output_filename = f"{base_name_no_ext}_VOZ.wav"
 
-        def preprocess(self, X_spec):
-            X_mag = np.abs(X_spec)
-            X_phase = np.angle(X_spec)
-    
-            return X_mag, X_phase
-    
-        def inference(self, X_spec):
-            X_mag, X_phase = self.preprocess(X_spec)
-    
-            coef = X_mag.max()
-            X_mag_pre = X_mag / coef
-    
-            n_frame = X_mag_pre.shape[2]
-            pad_l, pad_r, roi_size = dataset.make_padding(n_frame, self.window_size, self.offset)
-            n_window = int(np.ceil(n_frame / roi_size))
-    
-            X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
-    
-            pred = self._execute(X_mag_pad, roi_size, n_window)
-            pred = pred[:, :, :n_frame]
-    
-            return pred * coef, X_mag, np.exp(1.j * X_phase)
-    
-        def inference_tta(self, X_spec):
-            X_mag, X_phase = self.preprocess(X_spec)
-    
-            coef = X_mag.max()
-            X_mag_pre = X_mag / coef
-    
-            n_frame = X_mag_pre.shape[2]
-            pad_l, pad_r, roi_size = dataset.make_padding(n_frame, self.window_size, self.offset)
-            n_window = int(np.ceil(n_frame / roi_size))
-    
-            X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
-    
-            pred = self._execute(X_mag_pad, roi_size, n_window)
-            pred = pred[:, :, :n_frame]
-    
-            pad_l += roi_size // 2
-            pad_r += roi_size // 2
-            n_window += 1
-    
-            X_mag_pad = np.pad(X_mag_pre, ((0, 0), (0, 0), (pad_l, pad_r)), mode='constant')
-    
-            pred_tta = self._execute(X_mag_pad, roi_size, n_window)
-            pred_tta = pred_tta[:, :, roi_size // 2:]
-            pred_tta = pred_tta[:, :, :n_frame]
-    
-            return (pred + pred_tta) * 0.5 * coef, X_mag, np.exp(1.j * X_phase)
+                # Corrected output path
+                output_path = os.path.join(output_dir, base_name_no_ext, output_filename)
+                sf.write(output_path, wave.T, sr)
+
+                self.progress.stop()
+                os.remove(audio)
+                if count == len(audio_list):
+                    self.queue.put(('task_completed', 'Tarefa concluída'))
+
+        try:
+            main_processing(audio_files, self.output_directory)
+        except Exception as e:
+            self.queue.put(('error', f'Ocorreu um erro: {e}'))
+
+    def process_queue(self):
+        try:
+            message_type, data = self.queue.get_nowait()
+            if message_type == 'task_completed':
+                messagebox.showinfo(title='Aviso', message=data)
+                self.clear_selection()
+            elif message_type == 'error':
+                messagebox.showerror(title='Erro', message=data)
+
+            self.progress.stop()
+        except queue.Empty:
+            pass
+        finally:
+            self.root.after(100, self.process_queue)
+
+    def clear_selection(self):
+        self.file_paths = []
+        self.update_textbox()
+        self.text_box.config(state='normal')
+        self.text_box.delete(1.0, "end")
+        self.text_box.insert(1.0, 'Aguardando seleção de arquivos...')
+        self.text_box.config(state='disabled')
 
 
-    def main():
-        
-        count = 0
-        for audio in lista_de_audios:
-            count += 1
-            progress.start(10)
-            p = argparse.ArgumentParser()
-            p.add_argument('--gpu', '-g', type=int, default=-1)
-            p.add_argument('--pretrained_model', '-P', type=str, default='models/MGM_HIGHEND_v4_sr44100_hl1024_nf2048.pth')
-            p.add_argument('--input', '-i', required=False, default = audio)
-            p.add_argument('--sr', '-r', type=int, default=44100)
-            p.add_argument('--n_fft', '-f', type=int, default=2048)
-            p.add_argument('--hop_length', '-l', type=int, default=1024)
-            p.add_argument('--window_size', '-w', type=int, default=512)
-            p.add_argument('--output_image', '-I', action='store_true')
-            p.add_argument('--postprocess', '-p', action='store_true')
-            p.add_argument('--tta', '-t', action='store_true')
-            args = p.parse_args()
-    
-          #  print('carregando o modelo...', end=' ')
-            device = torch.device('cpu')
-            model = nets.CascadedASPPNet(args.n_fft)
-            model.load_state_dict(torch.load(args.pretrained_model, map_location=device))
-            if torch.cuda.is_available() and args.gpu >= 0:
-                device = torch.device('cuda:{}'.format(args.gpu))
-                model.to(device)
-          #  print('concluído')
-    
-          #  print('carregando o sinal...', end=' ')
-            X, sr = librosa.load(
-                args.input, args.sr, False, dtype=np.float32, res_type='kaiser_fast')
-            basename = os.path.splitext(os.path.basename(args.input))[0]
-          #  print('done')
-    
-            if X.ndim == 1:
-                X = np.asarray([X, X])
+    def quit_app(self):
+        print('\nSaindo...')
+        self.root.destroy()
 
-          #  print('realizando a filtragem...', end=' ')
-            X = spec_utils.wave_to_spectrogram(X, args.hop_length, args.n_fft)
-          #  print('done')
-            
-            vr = VocalRemover(model, device, args.window_size)
-            if args.tta:
-                pred, X_mag, X_phase = vr.inference_tta(X)
-            else:
-                pred, X_mag, X_phase = vr.inference(X)
-            
-
-          #  print('separando o áudio do ruído...', end=' ')
-            v_spec = np.clip(X_mag - pred, 0, np.inf) * X_phase
-            wave = spec_utils.spectrogram_to_wave(v_spec, hop_length=args.hop_length)
-          #  print('concluído')
-            sf.write('{}_VOZ.wav'.format(basename), wave.T, sr)
-            shutil.move(basename+"_VOZ.wav", dirname + "/" + audio[:-15])
-            progress.stop()
-            os.remove(audio)
-            if count == len(lista_de_audios):
-                text_box.config(state='normal')
-                text_box.delete(2.0,"end") 
-                text_box.config(state='disabled')
-                lst.clear()
-                lista1.clear()
-                lista_de_audios.clear()
-                messagebox.showwarning(title='Aviso', message='Tarefa concluída')
-
-           
-    if __name__ == '__main__':
-        main()
-
-
-def restart_program(): #Limpa a lista com os áudios
-    global lista1,lst
-    #text_box.delete(3.0,"end")
-    lst.clear()
-    lista1.clear()
-    text_box.config(state='normal')
-    text_box.delete(2.0,"end") 
-    text_box.config(state='disabled')
-    
-browse_text = StringVar()
-browse_btn = Button(text = "Carregar Áudio", command= open_file, font="Raleway", bg="gray", fg="white", height=1, width=14)
-progress.place(x = 203, y = 411)
-browse_btn.place(x=180, y=10)
-button3 = Button(text = "Local de salvamento", command = saveFile, font="Raleway", bg="gray", fg="white", height=1, width=17)
-button3.place(x=170, y=50)
-button3 = Button(text = "Filtrar ruído", command=lambda:threading.Thread(target=convertFormat, daemon = True).start(), font="Raleway", bg="gray", fg="white", height=1, width=17)
-button3.place(x=170, y=90)
-button4 = Button(text = "Sair", command = quit_me, font="Raleway", bg="gray", fg="white", height=1, width=17)
-button4.place(x=335, y=465)
-button5 = Button(text = "Limpar dados", command= restart_program, font="Raleway", bg="gray", fg="white", height=1, width=14)
-button5.place(x = 3, y = 465)
-
-
-root.mainloop()
+if __name__ == '__main__':
+    root = Tk()
+    app = NoiseRemoverApp(root)
+    root.mainloop()
